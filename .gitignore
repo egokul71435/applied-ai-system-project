@@ -1,0 +1,15 @@
+# Environment variables — never commit real keys
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+
+# Pytest
+.pytest_cache/
+
+# OS
+.DS_Store

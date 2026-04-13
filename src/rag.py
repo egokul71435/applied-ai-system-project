@@ -14,12 +14,17 @@ Reliability features:
 
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Dict, Tuple, Any
 
 import numpy as np
+from dotenv import load_dotenv
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq, APIError
+
+# Load .env from the project root (two levels up from this file)
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 logger = logging.getLogger(__name__)
 

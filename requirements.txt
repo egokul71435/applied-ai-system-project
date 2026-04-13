@@ -2,5 +2,6 @@ pandas
 pytest
 streamlit
 groq
+python-dotenv
 scikit-learn
 numpy
