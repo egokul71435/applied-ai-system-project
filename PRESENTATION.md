@@ -50,7 +50,7 @@ suggested time and a demo action where applicable.
 "Hi, I'm [your name]. This is VibeMatcher, a music recommendation system I
 built across four modules. It started as a simple weighted scoring engine and
 grew into a full RAG pipeline that takes natural language queries and generates
-explanations using Claude."
+explanations using Groq's hosted llama-3.3-70b-versatile model."
 
 **Show:** The project root in your terminal or IDE. Point out the three main
 source files: `src/recommender.py`, `src/rag.py`, `src/evaluator.py`.
@@ -103,7 +103,7 @@ VS Code, or use a screenshot).
    vectorizes it alongside all song descriptions and ranks by cosine similarity.
    No API call needed.
 3. **Generator** — The top-k retrieved songs are passed as grounded context to
-   Claude, which writes a natural language recommendation referencing specific
+   Groq, which writes a natural language recommendation referencing specific
    musical qualities.
 4. **Evaluator** — Three metrics score the result: retrieval relevance,
    diversity, and explanation coverage. A composite confidence score is logged.
@@ -124,22 +124,7 @@ layer handles the fuzzy, conversational queries that the scorer can't touch."
 
 ```bash
 export GROQ_API_KEY="gsk_..."
-python - <<'EOF'
-import logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-from src.recommender import load_songs
-from src.rag import RAGRecommender
-from src.evaluator import evaluate
-
-songs = load_songs("data/songs.csv")
-rag = RAGRecommender(songs)
-
-result = rag.recommend("chill acoustic music for studying", k=3)
-print("\n--- Response ---")
-print(result["generated_response"])
-print("\n--- Confidence:", result["confidence"], "---")
-print("--- Metrics:", evaluate(result), "---")
-EOF
+python -m src.rag "chill acoustic music for studying" -v
 ```
 
 **Point out while it runs:**
@@ -156,9 +141,8 @@ the catalog doesn't have, the similarity scores will be low and the confidence
 score flags it."
 
 **Optional second query:**
-```python
-result2 = rag.recommend("xyzzy frobulate quux", k=3)
-print("Confidence on nonsense query:", result2["confidence"])
+```bash
+python -m src.rag "xyzzy frobulate quux" -v
 ```
 
 "Even on a completely meaningless query, the system returns gracefully instead
@@ -176,9 +160,9 @@ of crashing — that's what the adversarial tests guard."
 **Say:**
 "The test groups cover the retriever's happy path, four adversarial edge cases,
 all three evaluator metrics, and a mocked end-to-end integration test where the
-Claude API is replaced with a fake response so the test runs without network
+Groq API is replaced with a fake response so the test runs without network
 access. One thing I learned: the mocked test confirmed the pipeline structure
-is correct, but it can't tell me whether Claude's actual output is good. That
+is correct, but it can't tell me whether Groq's actual output is good. That
 required manual inspection. Automated testing and human judgment both matter —
 neither is a substitute for the other."
 
@@ -196,7 +180,7 @@ tune the weights forever and not fix a catalog that simply doesn't contain
 certain kinds of music."
 
 **Point 2 — Measuring the right thing is harder than measuring something:**
-"My explanation coverage metric scores Claude's responses lower when it
+"My explanation coverage metric scores Groq's responses lower when it
 paraphrases a concept rather than using the exact query word. A response about
 'calm, focused listening' scores zero for the query 'studying' even though it's
 the better answer. The gap between what's measurable and what's meaningful is
@@ -204,7 +188,7 @@ a real design problem."
 
 **Point 3 — The failure modes of LLM systems are different:**
 "The original scorer fails visibly — you can read the score and see the
-mismatch. Claude fails quietly — it produces fluent, confident prose that can
+mismatch. Groq fails quietly — it produces fluent, confident prose that can
 be subtly wrong. That's why the evaluator and the confidence score exist: not
 to replace human judgment, but to give it something to act on."
 

@@ -5,7 +5,7 @@
 The RAG (Retrieval-Augmented Generation) layer sits alongside the existing
 weighted-scoring recommender. It accepts **natural language queries** instead
 of structured `UserProfile` objects, retrieves the most relevant songs from
-the catalog, then passes them as grounded context to Claude to generate rich,
+the catalog, then passes them as grounded context to Groq to generate rich,
 conversational explanations.
 
 ---
@@ -34,7 +34,7 @@ flowchart TD
     subgraph GENERATOR [Generator · src/rag.py]
         direction TB
         PROMPT[Augmented Prompt\nquery + retrieved context]
-        LLM[Claude claude-sonnet-4-6\nRAGRecommender.recommend]
+        LLM[Groq llama-3.3-70b-versatile\nRAGRecommender.recommend]
         RESP[Natural Language\nRecommendation]
         PROMPT --> LLM --> RESP
     end
@@ -97,9 +97,9 @@ RETRIEVER  (src/rag.py · Retriever)
   Top-K (default 3) songs + their scores are returned
        │
        ▼
-GENERATOR  (src/rag.py · RAGRecommender → Claude claude-sonnet-4-6)
+GENERATOR  (src/rag.py · RAGRecommender → Groq llama-3.3-70b-versatile)
   Augmented prompt = user query  +  retrieved song metadata (as context)
-  Claude generates natural-language recommendations with musical reasoning
+  Groq generates natural-language recommendations with musical reasoning
   Output: a paragraph explaining why each song fits the request
        │
        ▼
@@ -113,7 +113,7 @@ EVALUATOR  (src/evaluator.py · evaluate())
        └─► Any fail ──► HUMAN REVIEW (see below)
 
 OUTPUT
-  Recommended song titles + Claude-written explanations
+  Recommended song titles + Groq-written explanations
 ```
 
 ---
@@ -123,9 +123,9 @@ OUTPUT
 | Where | Who | What they check |
 |---|---|---|
 | `tests/test_rag.py` — adversarial cases | Developer / CI | Empty queries, nonsense input, k > corpus — system must not crash |
-| `tests/test_rag.py` — mocked integration | Developer | Full pipeline structure; real Claude output inspected manually before shipping |
+| `tests/test_rag.py` — mocked integration | Developer | Full pipeline structure; real Groq output inspected manually before shipping |
 | Evaluator threshold check | Automated + human | If any metric (relevance, diversity, coverage) falls below an acceptable level, the result is flagged for human review |
-| `model_card.md` reflection | Human author | Bias audit: does the retriever over-retrieve the same genre? Does Claude hallucinate song details? |
+| `model_card.md` reflection | Human author | Bias audit: does the retriever over-retrieve the same genre? Does Groq hallucinate song details? |
 
 ---
 

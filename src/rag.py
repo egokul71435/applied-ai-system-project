@@ -12,6 +12,7 @@ Reliability features:
   - confidence score attached to every result (composite of retrieval + diversity)
 """
 
+import argparse
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -193,3 +194,39 @@ class RAGRecommender:
             "generated_response": generated,
             "confidence": confidence,
         }
+
+
+def _cli() -> None:
+    """Entry point for `python -m src.rag "<query>"` — runs the full RAG
+    pipeline (retrieve → generate → evaluate) and prints the result."""
+    from .evaluator import evaluate
+    from .recommender import load_songs
+
+    parser = argparse.ArgumentParser(
+        prog="python -m src.rag",
+        description="Run the VibeMatcher RAG recommender on a natural language query.",
+    )
+    parser.add_argument("query", help="Natural language music request, e.g. 'chill acoustic music for studying'")
+    parser.add_argument("-k", type=int, default=3, help="Number of songs to retrieve (default: 3)")
+    parser.add_argument("--songs", default="data/songs.csv", help="Path to the song catalog CSV (default: data/songs.csv)")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show retrieval/generation INFO logs")
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO if args.verbose else logging.WARNING,
+        format="%(levelname)s %(message)s",
+    )
+
+    songs = load_songs(args.songs)
+    rag = RAGRecommender(songs)
+    result = rag.recommend(args.query, k=args.k)
+    metrics = evaluate(result)
+
+    print("\n--- Response ---")
+    print(result["generated_response"])
+    print(f"\n--- Confidence: {result['confidence']} ---")
+    print(f"--- Metrics: {metrics} ---")
+
+
+if __name__ == "__main__":
+    _cli()

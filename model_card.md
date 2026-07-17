@@ -59,3 +59,70 @@ Using AI tools like GitHub Copilot helped a lot with writing code quickly and su
 What surprised me was how a basic weighted matching algorithm could still produce recommendations that felt personalized and useful, even without complex machine learning.  
 
 If I extended this project, I'd try adding user feedback loops to adjust weights dynamically and incorporate more song features like lyrics or artist popularity.  
+
+---
+
+## 10. Addendum: VibeMatcher RAG Extension (Modules 3–4)
+
+**Model name:** VibeMatcher RAG (extension of VibeMatcher 1.0 above).
+
+**Intended use:** Same classroom-project scope as VibeMatcher 1.0, extended to
+accept free-text natural language queries (e.g. "chill acoustic music for
+studying") instead of a structured `{genre, mood, energy}` profile.
+
+**Generator model:** [Groq](https://groq.com)'s hosted `llama-3.3-70b-versatile`,
+called via the `groq` Python SDK (`src/rag.py`). This is **not** an Anthropic
+Claude model — earlier drafts of this project's docs referred to "Claude" as
+the generator; that was a documentation error, now corrected to match the
+actual implementation. "Claude" elsewhere in this repo's reflections (e.g. the
+"Collaboration with AI" section of `README.md`) refers to Claude used as a
+coding assistant during development, which is unrelated to the generator model
+used at runtime.
+
+**How it works:** `src/rag.py` builds a short text description of each song,
+indexes all descriptions with TF-IDF, and ranks them against the user's query
+by cosine similarity (`Retriever`). The top-k songs are inserted into a prompt
+sent to Groq, which writes a natural-language explanation grounded in that
+retrieved context (`RAGRecommender.recommend`). `src/evaluator.py` then scores
+the result on `retrieval_relevance`, `diversity`, and `explanation_coverage`,
+and a composite `confidence` score is attached to every result.
+
+**Data:** Same 18-song catalog as VibeMatcher 1.0 (`data/songs.csv`), reused
+without modification — the RAG layer adds a retrieval index on top, it does
+not change the underlying dataset.
+
+**Strengths:** Because the generator is only ever shown songs retrieved from
+the actual catalog, manual inspection during development found it consistently
+referenced real musical attributes (mood, energy, acousticness) and did not
+hallucinate song titles that don't exist in the dataset.
+
+**Limitations and bias:**
+- TF-IDF retrieval has no semantic understanding — "energetic" and "high
+  energy" are distinct tokens with no similarity, so relevant songs can be
+  missed on vocabulary mismatch alone.
+- The generator model carries whatever bias it internalized from its own
+  training data — e.g. what it associates with "relaxing" music — independent
+  of and invisible in this project's code.
+- User queries are inserted directly into the generation prompt with no input
+  sanitization, so a crafted query is a potential prompt-injection vector
+  (see `README.md` Ethics section for detail). Mitigated only by a system
+  prompt constraint ("only recommend songs from the provided list"), not by
+  explicit filtering.
+- `explanation_coverage` is a keyword-overlap proxy, not a semantic-match
+  score — a fully on-topic response can score low coverage if it paraphrases
+  the query instead of reusing its exact words.
+
+**Evaluation:** 23 automated tests (`pytest`) across `tests/test_recommender.py`
+and `tests/test_rag.py`, including 4 adversarial retrieval cases (empty query,
+nonsense query, k > corpus size, single-word query) and a mocked end-to-end
+integration test. The mocked test verifies pipeline structure only — real
+Groq outputs were inspected manually during development for tone, accuracy,
+and hallucination, since output quality can't be asserted automatically.
+
+**Usage:** `python -m src.rag "<query>"` (see `README.md` for the full CLI and
+programmatic usage).
+
+**Future work:** If the catalog grows well past 18 songs, TF-IDF likely stops
+being sufficient and an embedding-based retriever would be worth the added
+dependency weight. Explicit input sanitization for the prompt-injection surface
+above is the other clear next step before any real deployment.
