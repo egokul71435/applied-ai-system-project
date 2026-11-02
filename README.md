@@ -396,7 +396,7 @@ caller. I pushed back on this because catching all exceptions silently is
 dangerous — it would mask bugs in the retriever or evaluator that should fail
 loudly during development, treating them the same as a recoverable network
 error. The correct fix, which I implemented instead, was to catch only
-`anthropic.APIError` specifically, so that infrastructure failures degrade
+`groq.APIError` specifically, so that infrastructure failures degrade
 gracefully while logic errors still raise and surface in tests. Claude agreed
 when I explained the reasoning, but the initial suggestion would have made the
 system harder to debug.
